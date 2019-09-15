@@ -34,6 +34,10 @@ MIN_HUM_RATIO = 1e-7
           Any value above 0 or below the MIN_HUM_RATIO will be reset to this value.
 
 """
+class Water:
+    FREEZING_POINT = Celsius(0.0)
+    TRIPLE_POINT = Celsius(0.01)
+
 
 FREEZING_POINT_WATER_IP = Fahrenheit(32.0)
 """float: Freezing point of water in Fahrenheit.

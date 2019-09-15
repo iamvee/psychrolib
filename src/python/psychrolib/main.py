@@ -114,12 +114,6 @@ class Psychrometrics:
             self.temperature_of_wet_bulb = Fahrenheit(temperature_of_wet_bulb)
             self.pressure = Psi(pressure_value)
 
-        self._temperature_dry = Fahrenheit(self.temperature_of_dry_bulb)
-        self._temperature_wet = Fahrenheit(self.temperature_of_wet_bulb)
-
-        if self.temperature_of_wet_bulb.celsius < -100 or self.temperature_of_dry_bulb.celsius > 200:
-            raise ValueError("Dry bulb temperature must be in range [-100, 200]°C")
-
         if self.unit_system == IP_SYSTEM:
             self.vapour_bounds = [Fahrenheit(-148), Fahrenheit(392)]
         else:
@@ -127,6 +121,11 @@ class Psychrometrics:
 
         # cached data
         self._humidity_ratio = None
+
+    # todo
+    def validate(self):
+        if self.temperature_of_wet_bulb.celsius < -100 or self.temperature_of_dry_bulb.celsius > 200:
+            raise ValueError("Dry bulb temperature must be in range [-100, 200]°C")
 
     @property
     def report(self) -> tuple:
@@ -144,34 +143,19 @@ class Psychrometrics:
 
     @property
     def humidity_ratio(self) -> float:
-        if self._humidity_ratio is not None:
-            return self._humidity_ratio
+        if self._humidity_ratio is None:
+            if self.temperature_of_dry_bulb >= Water.FREEZING_POINT:
+                a = (2501. - 2.326 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio
+                b = 1.006 * self.diff_temperature_dry_wet.celsius
+                c = 2501. + 1.86 * self.temperature_of_dry_bulb.celsius - 4.186 * self.temperature_of_wet_bulb.celsius
 
-        if self.unit_system == IP_SYSTEM:
-            if self.temperature_of_wet_bulb >= FREEZING_POINT_WATER_IP:
-                HumRatio = \
-                    ((
-                             1093 - 0.556 * self.temperature_of_wet_bulb.fahrenheit) * self.sat_hum_ratio - 0.240 * self.diff_temperature_dry_wet.fahrenheit) / (
-                            1093 + 0.444 * self.temperature_of_dry_bulb.fahrenheit - self.temperature_of_wet_bulb.fahrenheit)
             else:
-                HumRatio = ((
-                                    1220 - 0.04 * self.temperature_of_wet_bulb.fahrenheit) * self.sat_hum_ratio - 0.240 * self.diff_temperature_dry_wet.fahrenheit) / (
-                                   1220 + 0.444 * self.temperature_of_dry_bulb.fahrenheit - 0.48 * self.temperature_of_wet_bulb.fahrenheit)
-        else:
-            if self.temperature_of_dry_bulb >= FREEZING_POINT_WATER_SI:
-                HumRatio = ((
-                                    2501. - 2.326 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio - 1.006 * self.diff_temperature_dry_wet.celsius) / (
-                                   2501. + 1.86 * self.temperature_of_dry_bulb.celsius - 4.186 * self.temperature_of_wet_bulb.celsius)
-            else:
-                HumRatio = ((
-                                    2830. - 0.24 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio - 1.006 * self.diff_temperature_dry_wet.celsius) / (
-                                   2830. + 1.86 * self.temperature_of_dry_bulb.celsius - 2.1 * self.temperature_of_wet_bulb.celsius)
-        # Validity check.
-        self._humidity_ratio = max(HumRatio, MIN_HUM_RATIO)
+                a = (2830. - 0.24 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio
+                b = 1.006 * self.diff_temperature_dry_wet.celsius
+                c = 2830. + 1.86 * self.temperature_of_dry_bulb.celsius - 2.1 * self.temperature_of_wet_bulb.celsius
 
-        # TODO
-        # if result < 0:
-        #     raise ValueError("Humidity ratio cannot be negative")
+            hr = (a - b) / c
+            self._humidity_ratio = max(hr, MIN_HUM_RATIO)
 
         return self._humidity_ratio
 
@@ -188,77 +172,22 @@ class Psychrometrics:
         return TDewPoint
 
     @staticmethod
-    def _calc_saturation_vapour_pressure(tmp: Temperature) -> float:
-        TDryBulb = tmp
-        if isIP():
-            t = tmp.rankine
-            t2 = t ** 2
-            t3 = t ** 3
-            t4 = t ** 4
-            log_t = math.log(t)
-            c = CoefficientIP
-            if tmp.fahrenheit <= TRIPLE_POINT_WATER_IP.fahrenheit:
-                LnPws = c.C01 / t + c.C02 + c.C03 * t + c.C04 * t2 + c.C05 * t3 + c.C06 * t4 + c.C07 * log_t
-            else:
-                LnPws = c.C08 / t + c.C09 + c.C10 * t + c.C11 * t2 + c.C12 * t3 + c.C13 * log_t
+    def _calc_saturation_vapour_pressure(tmp: Temperature) -> Pressure:
+        t = tmp.kelvin
+        t2, t3, t4 = t ** 2, t ** 3, t ** 4
+        log_t = math.log(t)
+        c = CoefficientSI
+
+        if tmp.celsius <= TRIPLE_POINT_WATER_SI.celsius:
+            ln_pws = c.C01 / t + c.C02 + c.C03 * t + c.C04 * t2 + c.C05 * t3 + c.C06 * t4 + c.C07 * log_t
         else:
-            t = tmp.kelvin
-            t2 = t ** 2
-            t3 = t ** 3
-            t4 = t ** 4
-            log_t = math.log(t)
-            c = CoefficientSI
+            ln_pws = c.C08 / t + c.C09 + c.C10 * t + c.C11 * t2 + c.C12 * t3 + c.C13 * log_t
 
-            if tmp.celsius <= TRIPLE_POINT_WATER_SI.celsius:
-                LnPws = c.C01 / t + c.C02 + c.C03 * t + c.C04 * t2 + c.C05 * t3 + c.C06 * t4 + c.C07 * log_t
-            else:
-                LnPws = c.C08 / t + c.C09 + c.C10 * t + c.C11 * t2 + c.c12 * t3 + c.C13 * log_t
-
-        SatVapPres = math.exp(LnPws)
-        return SatVapPres
-
-    def x(self):
-        if self.unit_system == IP_SYSTEM:
-            BOUNDS = [-148, 392]
-        else:
-            BOUNDS = [-100, 200]
-
-        # Validity check -- bounds outside which a solution cannot be found
-        if self.vap_pressure < GetSatVapPres(BOUNDS[0]) or self.vap_pressure > GetSatVapPres(BOUNDS[1]):
-            raise ValueError("Partial pressure of water vapor is outside range of validity of equations")
-
-        # We use NR to approximate the solution.
-        # First guess
-        TDewPoint = TDryBulb  # Calculated value of dew point temperatures, solved for iteratively
-        lnVP = math.log(VapPres)  # Partial pressure of water vapor in moist air
-
-        index = 1
-
-        while True:
-            TDewPoint_iter = TDewPoint  # TDewPoint used in NR calculation
-            lnVP_iter = math.log(GetSatVapPres(TDewPoint_iter))
-
-            # Derivative of function, calculated analytically
-            d_lnVP = dLnPws_(TDewPoint_iter)
-
-            # New estimate, bounded by the search domain defined above
-            TDewPoint = TDewPoint_iter - (lnVP_iter - lnVP) / d_lnVP
-            TDewPoint = max(TDewPoint, BOUNDS[0])
-            TDewPoint = min(TDewPoint, BOUNDS[1])
-
-            if ((math.fabs(TDewPoint - TDewPoint_iter) <= PSYCHROLIB_TOLERANCE)):
-                break
-
-            if (index > MAX_ITER_COUNT):
-                raise ValueError("Convergence not reached in GetTDewPointFromVapPres. Stopping.")
-
-            index = index + 1
-
-        TDewPoint = min(TDewPoint, TDryBulb)
-        return TDewPoint
+        res = math.exp(ln_pws)
+        return Pascal(res)
 
     @property
-    def sat_vap_pressure(self):
+    def sat_vap_pressure(self) -> Pressure:
         return self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
 
     @property
@@ -268,7 +197,7 @@ class Psychrometrics:
         return max(SatHumRatio, MIN_HUM_RATIO)
 
     @property
-    def vap_pressure(self):
+    def vap_pressure(self) -> Pressure:
         if self.vap_pressure < 0:
             raise ValueError("Partial pressure of water vapor in moist air cannot be negative")
 
