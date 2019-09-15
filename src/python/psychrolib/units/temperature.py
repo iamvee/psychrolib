@@ -7,6 +7,8 @@ class Temperature(GenericUnit):
     ZERO_FAHRENHEIT_IN_RANKINE = 491.67
     FAHRENHEIT_TO_CELSIUS_RATIO = 1.8
 
+    absolute_measure = True
+
     @property
     def kelvin(self):
         return self._base_value
@@ -22,6 +24,27 @@ class Temperature(GenericUnit):
     @property
     def rankine(self):
         return self.FAHRENHEIT_TO_CELSIUS_RATIO * self.kelvin
+
+    def __sub__(self, other):
+        return DeltaTemperature(self.kelvin - other.kelvin)
+
+
+class DeltaTemperature:
+    FAHRENHEIT_TO_CELSIUS_RATIO = 1.8
+
+    def __init__(self, value):
+        self._celsius = value
+
+    @property
+    def fahrenheit(self):
+        return self.FAHRENHEIT_TO_CELSIUS_RATIO * self._celsius
+
+    @property
+    def celsius(self):
+        return self._celsius
+
+
+
 
 
 class Kelvin(Temperature, SI):
@@ -41,4 +64,3 @@ class Rankine(Temperature, IP):
 class Fahrenheit(Rankine):
     def __init__(self, value):
         super().__init__(value + self.ZERO_FAHRENHEIT_IN_RANKINE)
-

@@ -6,8 +6,17 @@ class MeasurementUnit(Enum):
     IP = auto()
 
 
-class SI:
+class MeasurementUnitClass:
+    pass
+
+
+class SI(MeasurementUnitClass):
     unit = MeasurementUnit.SI
 
-class IP:
+
+class IP(MeasurementUnitClass):
     unit = MeasurementUnit.IP
+
+
+SI_SYSTEM = SI()
+IP_SYSTEM = IP()

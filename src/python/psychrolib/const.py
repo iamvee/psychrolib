@@ -1,3 +1,5 @@
+from .units import Fahrenheit, Celsius
+
 #######################################################################################################
 # Global constants
 #######################################################################################################
@@ -33,22 +35,22 @@ MIN_HUM_RATIO = 1e-7
 
 """
 
-FREEZING_POINT_WATER_IP = 32.0
+FREEZING_POINT_WATER_IP = Fahrenheit(32.0)
 """float: Freezing point of water in Fahrenheit.
 
 """
 
-FREEZING_POINT_WATER_SI = 0.0
+FREEZING_POINT_WATER_SI = Celsius(0.0)
 """float: Freezing point of water in Celsius.
 
 """
 
-TRIPLE_POINT_WATER_IP = 32.018
+TRIPLE_POINT_WATER_IP = Fahrenheit(32.018)
 """float: Triple point of water in Fahrenheit.
 
 """
 
-TRIPLE_POINT_WATER_SI = 0.01
+TRIPLE_POINT_WATER_SI = Celsius(0.01)
 """float: Triple point of water in Celsius.
 
 """
