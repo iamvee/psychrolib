@@ -25,6 +25,11 @@ class Temperature(GenericUnit):
     def rankine(self):
         return self.FAHRENHEIT_TO_CELSIUS_RATIO * self.kelvin
 
+    k = kelvin
+    r = rankine
+    c = celsius
+    f = fahrenheit
+
     def __sub__(self, other):
         return DeltaTemperature(self.kelvin - other.kelvin)
 
@@ -43,8 +48,8 @@ class DeltaTemperature:
     def celsius(self):
         return self._celsius
 
-
-
+    c = celsius
+    f = fahrenheit
 
 
 class Kelvin(Temperature, SI):
