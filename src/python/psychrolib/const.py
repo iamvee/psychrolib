@@ -1,4 +1,4 @@
-from .units import Fahrenheit, Celsius
+from .units import Fahrenheit, Celsius, HumidityRatio
 
 #######################################################################################################
 # Global constants
@@ -29,7 +29,7 @@ MAX_ITER_COUNT = 100
 
 """
 
-MIN_HUM_RATIO = 1e-7
+MIN_HUM_RATIO = HumidityRatio(value=1e-7)
 """float: Minimum acceptable humidity ratio used/returned by any functions.
           Any value above 0 or below the MIN_HUM_RATIO will be reset to this value.
 

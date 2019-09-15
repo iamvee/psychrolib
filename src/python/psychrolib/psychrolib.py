@@ -81,6 +81,7 @@ class CoefficientIP:
     C12 = -2.4780681E-09
     C13 = +6.5459673
 
+
 #######################################################################################################
 
 
@@ -313,6 +314,33 @@ def dLnPws_(TDryBulb: float) -> float:
     return dLnPws
 
 
+class DerivationCoefficients:
+    C01 = 5.6745359E+03
+    C02 = 9.677843E-03
+    C03 = 6.2215701E-07
+    C04 = 2.0747825E-09
+    C05 = 9.484024E-13
+    C06 = 4.1635019
+
+    C07 = 5.8002206E+03
+    C08 = 4.8640239E-02
+    C09 = 4.1764768E-05
+    C10 = 1.4452093E-08
+    C11 = 6.5459673
+
+
+def derivation_of_ln_saturation_vapour_pressure(temperature_of_dry_bulb: Temperature) -> Pressure:
+    T = temperature_of_dry_bulb.kelvin
+    T2, T3 = math.pow(T, 2), math.pow(T, 3)
+    c = DerivationCoefficients
+    if temperature_of_dry_bulb <= TRIPLE_POINT_WATER_SI:
+        res = c.C01 / T2 - c.C02 + 2 * c.C03 * T + 3 * c.C04 * T2 - 4 * c.C05 * T3 + c.C06 / T
+    else:
+        res = c.C07 / T2 - c.C08 + 2 * c.C09 * T - 3 * c.C10 * T2 + c.C11 / T
+
+    return Pascal(res)
+
+
 def GetTDewPointFromVapPres(TDryBulb: float, VapPres: float) -> float:
     """
     Return dew-point temperature given dry-bulb temperature and vapor pressure.
@@ -331,7 +359,7 @@ def GetTDewPointFromVapPres(TDryBulb: float, VapPres: float) -> float:
         The dew point temperature is solved by inverting the equation giving water vapor pressure
         at saturation from temperature rather than using the regressions provided
         by ASHRAE (eqn. 37 and 38) which are much less accurate and have a
-        narrower range of validity.
+        narrower rang- e of validity.
         The Newton-Raphson (NR) method is used on the logarithm of water vapour
         pressure as a function of temperature, which is a very smooth function
         Convergence is usually achieved in 3 to 5 iterations. 

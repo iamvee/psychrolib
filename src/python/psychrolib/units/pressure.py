@@ -3,6 +3,9 @@ from .generic_unit import GenericUnit
 
 
 class Pressure(GenericUnit):
+    PASCAL_TO_PSI_RATIO = 1
+    PASCAL_TO_ATMOSPHERE_RATIO = 1
+
     @property
     def pascal(self):
         return self._base_value
@@ -25,10 +28,13 @@ class Pascal(Pressure, SI):
 
 
 class Psi(Pressure, IP):
-    pass
+    def __init__(self, value):
+        super().__init__(value * self.PASCAL_TO_PSI_RATIO)
 
 
 class Atmosphere(Pascal):
-    pass
+    def __init__(self, value):
+        super().__init__(value * self.PASCAL_TO_ATMOSPHERE_RATIO)
+
 
 
