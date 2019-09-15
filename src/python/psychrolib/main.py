@@ -125,6 +125,9 @@ class Psychrometrics:
         else:
             self.vapour_bounds = [Celsius(-100), Celsius(200)]
 
+        # cached data
+        self._humidity_ratio = None
+
     @property
     def report(self) -> tuple:
         return (self.humidity_ratio,
@@ -141,7 +144,10 @@ class Psychrometrics:
 
     @property
     def humidity_ratio(self) -> float:
-        if isIP():
+        if self._humidity_ratio is not None:
+            return self._humidity_ratio
+
+        if self.unit_system == IP_SYSTEM:
             if self.temperature_of_wet_bulb >= FREEZING_POINT_WATER_IP:
                 HumRatio = \
                     ((
@@ -161,13 +167,13 @@ class Psychrometrics:
                                     2830. - 0.24 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio - 1.006 * self.diff_temperature_dry_wet.celsius) / (
                                    2830. + 1.86 * self.temperature_of_dry_bulb.celsius - 2.1 * self.temperature_of_wet_bulb.celsius)
         # Validity check.
-        result = max(HumRatio, MIN_HUM_RATIO)
+        self._humidity_ratio = max(HumRatio, MIN_HUM_RATIO)
 
         # TODO
         # if result < 0:
         #     raise ValueError("Humidity ratio cannot be negative")
 
-        return result
+        return self._humidity_ratio
 
     @property
     def bounded_humidity_ratio(self) -> float:
@@ -186,24 +192,27 @@ class Psychrometrics:
         TDryBulb = tmp
         if isIP():
             t = tmp.rankine
-
-            if (tmp.fahrenheit <= TRIPLE_POINT_WATER_IP.fahrenheit):
-                LnPws = (-1.0214165E+04 / t - 4.8932428 - 5.3765794E-03 * t + 1.9202377E-07 * t ** 2 \
-                         + 3.5575832E-10 * math.pow(t, 3) - 9.0344688E-14 * math.pow(t, 4) + 4.1635019 * math.log(t))
+            t2 = t ** 2
+            t3 = t ** 3
+            t4 = t ** 4
+            log_t = math.log(t)
+            c = CoefficientIP
+            if tmp.fahrenheit <= TRIPLE_POINT_WATER_IP.fahrenheit:
+                LnPws = c.C01 / t + c.C02 + c.C03 * t + c.C04 * t2 + c.C05 * t3 + c.C06 * t4 + c.C07 * log_t
             else:
-                LnPws = -1.0440397E+04 / t - 1.1294650E+01 - 2.7022355E-02 * t + 1.2890360E-05 * t ** 2 \
-                        - 2.4780681E-09 * math.pow(t, 3) + 6.5459673 * math.log(t)
+                LnPws = c.C08 / t + c.C09 + c.C10 * t + c.C11 * t2 + c.C12 * t3 + c.C13 * log_t
         else:
             t = tmp.kelvin
+            t2 = t ** 2
+            t3 = t ** 3
+            t4 = t ** 4
+            log_t = math.log(t)
+            c = CoefficientSI
 
-            c = CoefficientPI
-
-            if (tmp.celsius <= TRIPLE_POINT_WATER_SI.celsius):
-                LnPws = c.C1 / t + c.C2 + c.C3 * t + c.C4 * t ** 2 + c.C5 * math.pow(t, 3) + c.C6 * math.pow(t,
-                                                                                                             4) + c.C7 * math.log(
-                    t)
+            if tmp.celsius <= TRIPLE_POINT_WATER_SI.celsius:
+                LnPws = c.C01 / t + c.C02 + c.C03 * t + c.C04 * t2 + c.C05 * t3 + c.C06 * t4 + c.C07 * log_t
             else:
-                LnPws = c.C8 / t + c.C9 + c.C10 * t + c.C11 * t ** 2 + c.c12 * math.pow(t, 3) + c.C13 * math.log(t)
+                LnPws = c.C08 / t + c.C09 + c.C10 * t + c.C11 * t2 + c.c12 * t3 + c.C13 * log_t
 
         SatVapPres = math.exp(LnPws)
         return SatVapPres
@@ -296,7 +305,11 @@ class Psychrometrics:
 
     @property
     def DegreeOfSaturation(self):
-        pass
+        BoundedHumRatio = max(self.humidity_ratio, MIN_HUM_RATIO)
+
+        SatHumRatio = GetSatHumRatio(TDryBulb, Pressure)
+        DegreeOfSaturation = self.bounded_humidity_ratio / self.sat_hum_ratio
+        return DegreeOfSaturation
 
 
 if __name__ == '__main__':
