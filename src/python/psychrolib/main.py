@@ -221,9 +221,7 @@ class Psychrometrics:
 
     @property
     def humidity_ratio(self) -> HumidityRatio:
-        return GetHumRatioFromTWetBulb(self.temperature_of_dry_bulb.celsius,
-                                       self.temperature_of_wet_bulb.celsius,
-                                       self.pressure.pascal)
+
         if self._humidity_ratio is None:
             if self.temperature_of_dry_bulb >= Water.FREEZING_POINT:
                 a = (2501. - 2.326 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio.value
@@ -257,7 +255,8 @@ class Psychrometrics:
     @property
     def sat_vap_pressure(self) -> Pressure:
         if self._sat_vap_pressure is None:
-            self._sat_vap_pressure = self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
+            # self._sat_vap_pressure = self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
+            self._sat_vap_pressure = self._calc_saturation_vapour_pressure(self.temperature_of_wet_bulb)
         return self._sat_vap_pressure
 
     @property
