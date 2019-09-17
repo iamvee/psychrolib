@@ -478,43 +478,43 @@ def GetTWetBulbFromHumRatio(TDryBulb: float, HumRatio: float, Pressure: float) -
     return TWetBulb
 
 
-# def GetHumRatioFromTWetBulb(TDryBulb: float, TWetBulb: float, Pressure: float) -> float:
-#     """
-#     Return humidity ratio given dry-bulb temperature, wet-bulb temperature, and pressure.
-#
-#     Args:
-#         TDryBulb : Dry-bulb temperature in °F [IP] or °C [SI]
-#         TWetBulb : Wet-bulb temperature in °F [IP] or °C [SI]
-#         Pressure : Atmospheric pressure in Psi [IP] or Pa [SI]
-#
-#     Returns:
-#         Humidity ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
-#
-#     Reference:
-#         ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 33 and 35
-#
-#     """
-#     if TWetBulb > TDryBulb:
-#         raise ValueError("Wet bulb temperature is above dry bulb temperature")
-#
-#     Wsstar = GetSatHumRatio(TWetBulb, Pressure)
-#
-#     if isIP():
-#         if TWetBulb >= FREEZING_POINT_WATER_IP:
-#             HumRatio = ((1093 - 0.556 * TWetBulb) * Wsstar - 0.240 * (TDryBulb - TWetBulb)) \
-#                        / (1093 + 0.444 * TDryBulb - TWetBulb)
-#         else:
-#             HumRatio = ((1220 - 0.04 * TWetBulb) * Wsstar - 0.240 * (TDryBulb - TWetBulb)) \
-#                        / (1220 + 0.444 * TDryBulb - 0.48 * TWetBulb)
-#     else:
-#         if TWetBulb >= FREEZING_POINT_WATER_SI:
-#             HumRatio = ((2501. - 2.326 * TWetBulb) * Wsstar - 1.006 * (TDryBulb - TWetBulb)) \
-#                        / (2501. + 1.86 * TDryBulb - 4.186 * TWetBulb)
-#         else:
-#             HumRatio = ((2830. - 0.24 * TWetBulb) * Wsstar - 1.006 * (TDryBulb - TWetBulb)) \
-#                        / (2830. + 1.86 * TDryBulb - 2.1 * TWetBulb)
-#     # Validity check.
-#     return max(HumRatio, MIN_HUM_RATIO)
+def GetHumRatioFromTWetBulb(TDryBulb: float, TWetBulb: float, Pressure: float) -> float:
+    """
+    Return humidity ratio given dry-bulb temperature, wet-bulb temperature, and pressure.
+
+    Args:
+        TDryBulb : Dry-bulb temperature in °F [IP] or °C [SI]
+        TWetBulb : Wet-bulb temperature in °F [IP] or °C [SI]
+        Pressure : Atmospheric pressure in Psi [IP] or Pa [SI]
+
+    Returns:
+        Humidity ratio in lb_H₂O lb_Air⁻¹ [IP] or kg_H₂O kg_Air⁻¹ [SI]
+
+    Reference:
+        ASHRAE Handbook - Fundamentals (2017) ch. 1 eqn 33 and 35
+
+    """
+    if TWetBulb > TDryBulb:
+        raise ValueError("Wet bulb temperature is above dry bulb temperature")
+
+    Wsstar = GetSatHumRatio(TWetBulb, Pressure)
+
+    if isIP():
+        if TWetBulb >= FREEZING_POINT_WATER_IP:
+            HumRatio = ((1093 - 0.556 * TWetBulb) * Wsstar - 0.240 * (TDryBulb - TWetBulb)) \
+                       / (1093 + 0.444 * TDryBulb - TWetBulb)
+        else:
+            HumRatio = ((1220 - 0.04 * TWetBulb) * Wsstar - 0.240 * (TDryBulb - TWetBulb)) \
+                       / (1220 + 0.444 * TDryBulb - 0.48 * TWetBulb)
+    else:
+        if TWetBulb >= FREEZING_POINT_WATER_SI:
+            HumRatio = ((2501. - 2.326 * TWetBulb) * Wsstar - 1.006 * (TDryBulb - TWetBulb)) \
+                       / (2501. + 1.86 * TDryBulb - 4.186 * TWetBulb)
+        else:
+            HumRatio = ((2830. - 0.24 * TWetBulb) * Wsstar - 1.006 * (TDryBulb - TWetBulb)) \
+                       / (2830. + 1.86 * TDryBulb - 2.1 * TWetBulb)
+    # Validity check.
+    return max(HumRatio, MIN_HUM_RATIO)
 
 
 def GetHumRatioFromRelHum(TDryBulb: float, RelHum: float, Pressure: float) -> float:

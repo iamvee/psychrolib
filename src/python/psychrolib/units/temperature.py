@@ -48,6 +48,9 @@ class DeltaTemperature:
     def celsius(self):
         return self._celsius
 
+    def __repr__(self):
+        return f"Delta ... {self._celsius} C"
+
     c = celsius
     f = fahrenheit
 
@@ -55,19 +58,24 @@ class DeltaTemperature:
 
 
 class Kelvin(Temperature, SI):
-    pass
-
+    def __repr__(self):
+        return f"{self.kelvin} K"
 
 class Celsius(Kelvin):
     def __init__(self, value):
         super().__init__(value + self.ZERO_CELSIUS_IN_KELVIN)
 
+    def __repr__(self):
+        return f"{self.celsius} °C"
 
 class Rankine(Temperature, IP):
     def __init__(self, value):
         super().__init__(value / self.FAHRENHEIT_TO_CELSIUS_RATIO)
-
+    def __repr__(self):
+        return f"{self.rankine} R"
 
 class Fahrenheit(Rankine):
     def __init__(self, value):
         super().__init__(value + self.ZERO_FAHRENHEIT_IN_RANKINE)
+    def __repr__(self):
+        return f"{self.fahrenheit} °F"

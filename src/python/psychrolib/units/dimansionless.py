@@ -24,6 +24,9 @@ class Ratio:
     def __eq__(self, other):
         return self.value == other
 
+    def __repr__(self):
+        return f"Ratio... {self._value} {self.__class__.__name__}"
+
 
 class HumidityRatio(Ratio):
     def __init__(self, solvant: Mass = None, solver: Mass = None, value: float = None):
