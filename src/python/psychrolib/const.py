@@ -1,4 +1,8 @@
-from .units import Fahrenheit, Celsius, HumidityRatio
+from .units import Fahrenheit, Celsius, HumidityRatio, DeltaTemperature
+
+
+PSYCHROLIB_TOLERANCE = 1.0
+PSYCHROLIB_TOLERANCE_TEMPERATURE = DeltaTemperature(1.0)
 
 #######################################################################################################
 # Global constants
