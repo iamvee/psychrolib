@@ -478,7 +478,7 @@ def GetTWetBulbFromHumRatio(TDryBulb: float, HumRatio: float, Pressure: float) -
     return TWetBulb
 
 
-def GetHumRatioFromTWetBulb(TDryBulb: float, TWetBulb: float, Pressure: float) -> float:
+def GetHumRatioFromTWetBulb(TDryBulb: float, TWetBulb: float, Pressure_: float) -> float:
     """
     Return humidity ratio given dry-bulb temperature, wet-bulb temperature, and pressure.
 
@@ -497,7 +497,7 @@ def GetHumRatioFromTWetBulb(TDryBulb: float, TWetBulb: float, Pressure: float) -
     if TWetBulb > TDryBulb:
         raise ValueError("Wet bulb temperature is above dry bulb temperature")
 
-    Wsstar = GetSatHumRatio(TWetBulb, Pressure)
+    Wsstar = GetSatHumRatio(TWetBulb, Pressure_)
 
     if isIP():
         if TWetBulb >= FREEZING_POINT_WATER_IP:
@@ -899,7 +899,7 @@ def GetSatVapPres(TDryBulb: float) -> float:
     return SatVapPres
 
 
-def GetSatHumRatio(TDryBulb: float, Pressure: float) -> float:
+def GetSatHumRatio(TDryBulb: float, Pressure_: float) -> float:
     """
     Return humidity ratio of saturated air given dry-bulb temperature and pressure.
 
@@ -915,10 +915,10 @@ def GetSatHumRatio(TDryBulb: float, Pressure: float) -> float:
 
     """
     SatVaporPres = GetSatVapPres(TDryBulb)
-    SatHumRatio = 0.621945 * SatVaporPres / (Pressure - SatVaporPres)
+    SatHumRatio = 0.621945 * SatVaporPres / (Pressure_.pascal - SatVaporPres)
 
     # Validity check.
-    return max(SatHumRatio, MIN_HUM_RATIO)
+    return max(SatHumRatio, MIN_HUM_RATIO.value)
 
 
 def GetSatAirEnthalpy(TDryBulb: float, Pressure: float) -> float:

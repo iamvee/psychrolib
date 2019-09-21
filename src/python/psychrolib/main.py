@@ -113,13 +113,13 @@ class Psychrometrics:
         self._temperature_of_wet_bulb = None
         self._sat_vap_pressure = None
         self._sat_vap_pressure__dry_bulb = None
+        self._sat_vap_pressure__dew_point = None
         self._sat_hum_ratio = None
         self._sat_hum_ratio__dry_bulb = None
         self._vap_pressure = None
         self._rel_humidity = None
         self._moist_air_enthalpy = None
         self._moist_air_volume = None
-
 
         self.unit_system = system
 
@@ -129,12 +129,10 @@ class Psychrometrics:
             if temperature_of_wet_bulb > temperature_of_dry_bulb:
                 raise ValueError("Wet bulb temperature is above dry bulb temperature")
             self._temperature_of_wet_bulb = Celsius(temperature_of_wet_bulb)
+            # self._temperature_of_dew_point = self.temperature_of_dew_point
 
         if temperature_of_dew_point is not None:
             self._temperature_of_dew_point = Celsius(temperature_of_dew_point)
-
-
-
 
         if rel_humidity is not None:
             self._rel_humidity = rel_humidity
@@ -232,7 +230,7 @@ class Psychrometrics:
 
     @staticmethod
     def _calculate_hum_ratio_from_temperature_of_dew_point(temperature_of_dew_point: Temperature) -> HumidityRatio:
-
+        pass
 
     # fixme : properties
     @property
@@ -241,20 +239,36 @@ class Psychrometrics:
 
     @property
     def humidity_ratio(self) -> HumidityRatio:
-
         if self._humidity_ratio is None:
-            if self.temperature_of_dry_bulb.celsius >= Water.FREEZING_POINT.celsius:
-                a = (2501. - 2.326 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio.value
-                b = 1.006 * self.diff_temperature_dry_wet.celsius
-                c = 2501. + 1.86 * self.temperature_of_dry_bulb.celsius - 4.186 * self.temperature_of_wet_bulb.celsius
+            if self._temperature_of_wet_bulb is not None:
 
+                if self.temperature_of_dry_bulb.celsius >= Water.FREEZING_POINT.celsius:
+                    a = (2501. - 2.326 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio.value
+                    b = 1.006 * self.diff_temperature_dry_wet.celsius
+                    c = 2501. + 1.86 * self.temperature_of_dry_bulb.celsius - 4.186 * self.temperature_of_wet_bulb.celsius
+
+                else:
+                    a = (2830. - 0.24 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio.value
+                    b = 1.006 * self.diff_temperature_dry_wet.celsius
+                    c = 2830. + 1.86 * self.temperature_of_dry_bulb.celsius - 2.1 * self.temperature_of_wet_bulb.celsius
+
+                hr = (a - b) / c
+                self._humidity_ratio = HumidityRatio(value=max(hr, MIN_HUM_RATIO.value))
+
+            elif self._temperature_of_dew_point is not None:
+                res = 0.621945 * self.sat_vap_pressure__dew_point.pascal / (
+                        self.pressure.pascal - self.sat_vap_pressure__dew_point.pascal)
+                res = max(res, MIN_HUM_RATIO.value)
+                self._humidity_ratio = HumidityRatio(value=res)
             else:
-                a = (2830. - 0.24 * self.temperature_of_wet_bulb.celsius) * self.sat_hum_ratio.value
-                b = 1.006 * self.diff_temperature_dry_wet.celsius
-                c = 2830. + 1.86 * self.temperature_of_dry_bulb.celsius - 2.1 * self.temperature_of_wet_bulb.celsius
 
-            hr = (a - b) / c
-            self._humidity_ratio = HumidityRatio(value=max(hr, MIN_HUM_RATIO.value))
+                res = self.rel_humidity * self.sat_vap_pressure__dry_bulb.pascal
+
+                res = 0.621945 * res / (self.pressure.pascal - res)
+
+                # Validity check.
+                res = max(res, MIN_HUM_RATIO.value)
+                self._humidity_ratio = HumidityRatio(value=res)
 
         return self._humidity_ratio
 
@@ -278,20 +292,19 @@ class Psychrometrics:
             pass
         return self._temperature_of_dry_bulb
 
-
     # TODO : fix this region
     @property
     def temperature_of_wet_bulb(self) -> Temperature:
         if self._temperature_of_wet_bulb is None:
             BoundedHumRatio = self.bounded_humidity_ratio
 
-            TDewPoint = GetTDewPointFromHumRatio(self.temperature_of_dry_bulb,
-                                                 self.bounded_humidity_ratio,
-                                                 self.pressure)
-
+            TDewPoint = GetTDewPointFromHumRatio(self.temperature_of_dry_bulb.celsius,
+                                                 self.bounded_humidity_ratio.value,
+                                                 self.pressure.pascal)
+            TDryBulb = self.temperature_of_dry_bulb.celsius
             # Initial guesses
-            TWetBulbSup = TDryBulb
-            TWetBulbInf = TDewPoint
+            TWetBulbSup = self.temperature_of_dry_bulb.celsius
+            TWetBulbInf = self.temperature_of_dew_point.celsius
             TWetBulb = (TWetBulbInf + TWetBulbSup) / 2
 
             index = 1
@@ -299,7 +312,7 @@ class Psychrometrics:
             while ((TWetBulbSup - TWetBulbInf) > PSYCHROLIB_TOLERANCE):
 
                 # Compute humidity ratio at temperature Tstar
-                Wstar = GetHumRatioFromTWetBulb(TDryBulb, TWetBulb, Pressure)
+                Wstar = GetHumRatioFromTWetBulb(self.temperature_of_dry_bulb.celsius, TWetBulb, self.pressure)
 
                 # Get new bounds
                 if Wstar > BoundedHumRatio:
@@ -314,7 +327,7 @@ class Psychrometrics:
                     raise ValueError("Convergence not reached in GetTWetBulbFromHumRatio. Stopping.")
 
                 index = index + 1
-            return TWetBulb
+            self._temperature_of_wet_bulb = TWetBulb
 
         return self._temperature_of_wet_bulb
 
@@ -331,6 +344,13 @@ class Psychrometrics:
             # self._sat_vap_pressure = self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
             self._sat_vap_pressure__dry_bulb = self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
         return self._sat_vap_pressure__dry_bulb
+
+    @property
+    def sat_vap_pressure__dew_point(self) -> Pressure:
+        if self._sat_vap_pressure__dew_point is None:
+            # self._sat_vap_pressure = self._calc_saturation_vapour_pressure(self.temperature_of_dry_bulb)
+            self._sat_vap_pressure__dew_point = self._calc_saturation_vapour_pressure(self.temperature_of_dew_point)
+        return self._sat_vap_pressure__dew_point
 
     @property
     def sat_hum_ratio(self) -> HumidityRatio:
