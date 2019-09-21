@@ -333,7 +333,7 @@ def derivation_of_ln_saturation_vapour_pressure(temperature_of_dry_bulb: Tempera
     T = temperature_of_dry_bulb.kelvin
     T2, T3 = math.pow(T, 2), math.pow(T, 3)
     c = DerivationCoefficients
-    if temperature_of_dry_bulb <= TRIPLE_POINT_WATER_SI:
+    if temperature_of_dry_bulb.celsius <= TRIPLE_POINT_WATER_SI.celsius:
         res = c.C01 / T2 - c.C02 + 2 * c.C03 * T + 3 * c.C04 * T2 - 4 * c.C05 * T3 + c.C06 / T
     else:
         res = c.C07 / T2 - c.C08 + 2 * c.C09 * T - 3 * c.C10 * T2 + c.C11 / T
